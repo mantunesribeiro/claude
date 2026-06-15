@@ -1,0 +1,6 @@
+# Protected branches — single source of truth for branch-guard.sh.
+# One branch name per line. Keep in sync with CLAUDE.md.
+main
+master
+production
+release

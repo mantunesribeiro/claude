@@ -15,6 +15,13 @@
     ],
     "deny": [
       "Bash(curl *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf:*)",
+      "Bash(rtk git push --force *)",
+      "Bash(rtk git push -f *)",
+      "Bash(rtk git reset --hard *)",
       "Read(**/.env)",
       "Read(**/.env.*)",
       "Read(**/secrets/**)"
@@ -22,8 +29,12 @@
     "ask": [
       "Bash(git commit *)",
       "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
       "Bash(rtk git commit *)",
-      "Bash(rtk git push *)"
+      "Bash(rtk git push *)",
+      "Bash(rtk git merge *)",
+      "Bash(rtk git rebase *)"
     ]
   },
   "model": "opus",
@@ -35,6 +46,10 @@
           {
             "type": "command",
             "command": "rtk hook claude"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/branch-guard.sh\""
           }
         ]
       }
@@ -42,7 +57,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash /home/mateus/.claude/statusline-command.sh"
+    "command": "bash \"$HOME/.claude/statusline-command.sh\""
   },
   "enabledPlugins": {
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
