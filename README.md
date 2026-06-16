@@ -11,7 +11,10 @@ Personal [Claude Code](https://docs.claude.com/en/docs/claude-code) configuratio
 | `hooks/branch-guard.sh` | `PreToolUse` hook that deterministically blocks dangerous git ops (force push, push/merge/rebase/reset on protected branches). |
 | `.protected-branches` | Single source of truth for the protected-branch list, read by `branch-guard.sh`. |
 | `CLAUDE.md` | Natural-language git workflow rules (the *intent* behind the hook + permissions). |
-| `install.sh` | Symlinks everything into `~/.claude` (with backups). |
+| `install.sh` | First-time setup: symlinks everything into `~/.claude` (with backups), wires the git rules, registers plugin marketplaces, sanity-checks. |
+| `update.sh` | Re-syncs `~/.claude` with the repo after you edit it (new files, plugin marketplaces). |
+| `bootstrap.sh` | One-liner remote installer for machines that don't keep the repo: downloads the tarball and **copies** the config into `~/.claude`. Re-run to update. |
+| `_lib.sh` | Shared helpers + the single file map, sourced by all scripts. |
 
 ## Settings overview
 
@@ -81,16 +84,30 @@ The Bash hook delegates to **RTK (Rust Token Killer)**, a CLI proxy that rewrite
 
 ## Usage
 
-Run the installer — it symlinks everything into `~/.claude` (backing up any real files to `*.bak`):
+There are two ways to use this, depending on whether you want to keep the repo on the machine.
+
+### A. Your main machine — keep the repo, symlink (live editing)
+
+Clone once, then two idempotent commands:
 
 ```bash
-./install.sh
+git clone git@github.com:mantunesribeiro/claude.git && cd claude
+./install.sh   # first-time setup
+./update.sh    # re-sync ~/.claude after you change the repo
 ```
 
-It will not overwrite an existing `~/.claude/CLAUDE.md`; instead it links the git rules as `~/.claude/git-rules.md`. To load them globally, add this import line to your `~/.claude/CLAUDE.md`:
+`install.sh` **symlinks** everything into `~/.claude` (backing up any real, pre-existing file to `*.bak` once), registers the plugin marketplaces, and checks for `rtk`. It will not overwrite an existing `~/.claude/CLAUDE.md`; it links the git rules as `~/.claude/git-rules.md` and **automatically appends** `@git-rules.md` to your `~/.claude/CLAUDE.md` so they load globally (no manual step).
 
-```
-@git-rules.md
+Because the config is symlinked, editing a file in this repo takes effect immediately. `update.sh` covers what symlinks don't: newly added config files and refreshing plugin marketplaces (`claude plugin marketplace update`). After pulling from elsewhere, run `git pull && ./update.sh`.
+
+### B. Other machines — no repo, copy (one-liner)
+
+Install **and** update with the same command (re-running overwrites the copies):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mantunesribeiro/claude/main/bootstrap.sh | bash
 ```
 
-Restart Claude Code and confirm with `/status` (look for **User settings** under "Setting sources").
+`bootstrap.sh` downloads the repo tarball to a temp dir, **copies** the config into `~/.claude` (no symlinks, no repo left behind), then deletes the temp dir. Pin a version with `REF`: `curl -fsSL .../bootstrap.sh | REF=v1.0.0 bash`. Edit config only on your main machine; re-run this to pull the latest onto the others.
+
+After any of the above, restart Claude Code and confirm with `/status` (look for **User settings** under "Setting sources").
