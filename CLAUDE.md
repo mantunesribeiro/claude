@@ -27,6 +27,15 @@ Whenever a rule below says "a protected branch", it means any of these.
 - `git rebase` on a protected branch
 - Any command that rewrites the history of a shared branch.
 
+## Commit rules
+- There may be pre-existing staged changes that I do NOT want committed.
+- Never run `git add -A`, `git add .`, `git commit -a`, or a blanket `git add`.
+- To commit the session's work, use `git commit <files> -m "..."`, passing
+  explicitly only the files you changed in this session.
+- This ensures anything that was already staged beforehand stays untouched.
+- If you're unsure which files are yours, run `git status`, show what you
+  intend to include, and ask for confirmation before committing.
+
 ## Expected flow when finishing a task
 1. Make sure you are on a feature branch (not a protected branch).
 2. Commit the changes (no co-author; attribution is disabled).
