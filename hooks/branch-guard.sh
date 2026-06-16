@@ -2,7 +2,8 @@
 #
 # branch-guard.sh — Claude Code PreToolUse hook (matcher: Bash)
 #
-# Blocks dangerous git operations on protected branches:
+# WARNS (asks for confirmation) on dangerous git operations — it does NOT block.
+# The user is alerted and decides; nothing is prevented outright. Covers:
 #   - git merge        while on a protected branch (main/master/...)
 #   - git rebase       while on a protected branch
 #   - git push         directly to a protected branch
@@ -12,10 +13,12 @@
 # The substring-based regexes also match rtk-proxied commands
 # (e.g. "rtk git push origin main"), so this works alongside the rtk hook.
 #
-# Hook contract:
+# Hook contract (PreToolUse):
 #   - stdin receives JSON with .tool_input.command
-#   - exit 0  -> allow
-#   - exit 2  -> BLOCK and return stderr to Claude as feedback
+#   - to warn + confirm, print JSON on stdout and exit 0:
+#       {"hookSpecificOutput":{"hookEventName":"PreToolUse",
+#        "permissionDecision":"ask","permissionDecisionReason":"..."}}
+#   - plain exit 0 (no JSON) -> allow without prompting
 #
 # Install: see settings.json. Remember:  chmod +x branch-guard.sh
 
@@ -64,35 +67,44 @@ is_protected() {
   return 1
 }
 
-block() {
-  # $1 = reason, $2 = suggestion
-  echo "🛑 branch-guard blocked: $1" >&2
-  echo "" >&2
-  echo "   Current branch: ${CURRENT_BRANCH:-unknown}" >&2
-  echo "   Command:        $CMD" >&2
-  echo "" >&2
-  echo "   Suggestion: $2" >&2
-  exit 2
+# warn — alert the user and ask them to confirm (does NOT block).
+#   $1 = reason, $2 = note
+warn() {
+  local msg="⚠️ branch-guard: $1
+   Current branch: ${CURRENT_BRANCH:-unknown}
+   Command:        $CMD
+   Note: $2"
+
+  if command -v jq >/dev/null 2>&1; then
+    jq -n --arg r "$msg" \
+      '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:$r}}'
+  elif command -v python3 >/dev/null 2>&1; then
+    MSG="$msg" python3 -c 'import os,json; print(json.dumps({"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":os.environ["MSG"]}}))'
+  else
+    # No JSON tooling: surface the warning but allow (do not prevent).
+    echo "$msg" >&2
+  fi
+  exit 0
 }
 
-# --- Rules ------------------------------------------------------------------
+# --- Rules (warn + confirm; never block) ------------------------------------
 
 # 1) Force push on any branch
 if echo "$CMD" | grep -Eq 'git[[:space:]]+push.*(--force([[:space:]]|$|=)|--force-with-lease|[[:space:]]-f([[:space:]]|$))'; then
-  block "force push is destructive (rewrites remote history)." \
-        "if you really need it, run the command yourself, manually."
+  warn "force push rewrites remote history (destructive)." \
+       "make sure nobody else depends on the branch before confirming."
 fi
 
 # 2) Direct push to a protected branch
 #    Matches: git push origin main / git push origin HEAD:main / git push origin master ...
 for p in "${PROTECTED_BRANCHES[@]}"; do
   if echo "$CMD" | grep -Eq "git[[:space:]]+push([[:space:]].*)?[[:space:]]${p}([[:space:]]|$|:)"; then
-    block "direct push to '${p}'." \
-          "open a Pull Request from a feature branch instead of pushing directly."
+    warn "direct push to protected branch '${p}'." \
+         "prefer a feature branch + PR; confirm only if you intend to push straight to '${p}'."
   fi
   if echo "$CMD" | grep -Eq "git[[:space:]]+push([[:space:]].*)?:${p}([[:space:]]|$)"; then
-    block "direct push to '${p}' (refspec HEAD:${p})." \
-          "open a Pull Request from a feature branch."
+    warn "direct push to protected branch '${p}' (refspec HEAD:${p})." \
+         "prefer a feature branch + PR; confirm only if intentional."
   fi
 done
 
@@ -100,20 +112,20 @@ done
 if [[ -n "$CURRENT_BRANCH" ]] && is_protected "$CURRENT_BRANCH"; then
 
   if echo "$CMD" | grep -Eq 'git[[:space:]]+merge([[:space:]]|$)'; then
-    block "merge while on '${CURRENT_BRANCH}'." \
-          "switch to a feature branch (git checkout -b feature/x) and use a Pull Request."
+    warn "merge while on protected branch '${CURRENT_BRANCH}'." \
+         "this writes straight to '${CURRENT_BRANCH}'; confirm if that's what you want."
   fi
 
   if echo "$CMD" | grep -Eq 'git[[:space:]]+rebase([[:space:]]|$)'; then
-    block "rebase on '${CURRENT_BRANCH}' rewrites the main branch history." \
-          "work on a separate feature branch."
+    warn "rebase on protected branch '${CURRENT_BRANCH}' rewrites its history." \
+         "confirm only if you understand the history rewrite."
   fi
 
   if echo "$CMD" | grep -Eq 'git[[:space:]]+reset.*--hard'; then
-    block "reset --hard on '${CURRENT_BRANCH}' discards work irreversibly." \
-          "if intentional, run it yourself, manually."
+    warn "reset --hard on '${CURRENT_BRANCH}' discards uncommitted work irreversibly." \
+         "confirm only if you mean to throw those changes away."
   fi
 fi
 
-# All good: allow execution.
+# Nothing risky matched: allow without prompting.
 exit 0

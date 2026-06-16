@@ -2,7 +2,10 @@
 
 These rules apply to ALL of my projects. They complement the `branch-guard`
 hook and the permissions in `settings.json`.
-The hook is the real barrier; these instructions exist so you understand the *intent*.
+Philosophy: **alert, don't block.** The `branch-guard` hook and the `ask`
+permissions *warn me and ask for confirmation* on risky git operations — they
+do not prevent them. I stay in control and decide. These instructions exist so
+you understand the intent and default to the safer choice without being forced.
 
 ## Protected branches
 The following branches are **protected** and must be treated the same way
@@ -10,22 +13,30 @@ throughout these rules: `main`, `master`, `production`, `release`.
 Whenever a rule below says "a protected branch", it means any of these.
 (This list must stay in sync with `.protected-branches`, which `branch-guard.sh` reads.)
 
-## Protected branches: never touch directly
-- **Never** commit, merge, or push directly to any protected branch.
-- All work happens on a feature branch:
+## Working on protected branches (warn, don't block)
+- Committing, merging, or pushing directly to a protected branch is **allowed**,
+  but it is risky — **warn me first**, then proceed once I confirm.
+- **Default to the safer path** without forcing it: prefer a feature branch
   `git checkout -b <prefix>/<short-description>`
-  Prefixes: `feature/`, `fix/`, `docs/`, `chore/`, `refactor/`.
+  (prefixes: `feature/`, `fix/`, `docs/`, `chore/`, `refactor/`) and a PR.
+  Suggest it, but if I say work directly on the protected branch, do so.
+- Before any commit/push, **show me `git status` and `git diff --cached`** so I
+  can see exactly what's going out (this is the discipline that replaces hard
+  blocking).
 
 ## Integrating changes
-- Changes reach a protected branch **only via Pull Request**.
-- To update a branch with its base, **use `git merge`** (not `git rebase`).
-  `rebase` is treated as destructive and requires my explicit approval.
+- A Pull Request is the **preferred** way to reach a protected branch — not the
+  only one. If I ask to merge/push directly, alert me to the risk and do it.
+- To update a branch with its base, **prefer `git merge`** over `git rebase`.
+  `rebase` rewrites history — warn me before running it.
 
-## Destructive operations (forbidden unless I explicitly ask)
+## Destructive operations (warn + confirm, never silently)
 - `git push --force` / `git push -f` / `--force-with-lease`
 - `git reset --hard`
-- `git rebase` on a protected branch
+- `git rebase` (history rewrite)
 - Any command that rewrites the history of a shared branch.
+For each: explain what it will do and why it's risky, then run it only after I
+confirm. Never run one of these as a silent side effect of another task.
 
 ## Commit rules
 - There may be pre-existing staged changes that I do NOT want committed.
@@ -37,8 +48,11 @@ Whenever a rule below says "a protected branch", it means any of these.
   intend to include, and ask for confirmation before committing.
 
 ## Expected flow when finishing a task
-1. Make sure you are on a feature branch (not a protected branch).
-2. Commit the changes (no co-author; attribution is disabled).
-3. `git push` the feature branch (never a protected branch).
-4. Open/update the Pull Request.
-5. Stop there. Merging into a protected branch is done by me (or by the server-side branch protection).
+1. Note the current branch. If it's a protected one, **say so and suggest** a
+   feature branch — but don't force it; follow my call.
+2. Show `git status` + `git diff --cached` for the files you changed.
+3. Commit the changes (no co-author; attribution is disabled).
+4. `git push`. If the target is a protected branch, the warn+confirm fires —
+   that's expected; proceed once I confirm.
+5. Prefer opening/updating a PR. If I asked to go straight to the protected
+   branch, that's fine — you already warned me.

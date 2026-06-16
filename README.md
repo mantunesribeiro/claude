@@ -25,8 +25,8 @@ Personal [Claude Code](https://docs.claude.com/en/docs/claude-code) configuratio
 - **Attribution**: empty commit/PR trailers, so commits and PRs are not tagged with Claude attribution.
 - **Permissions**:
   - `allow` — `npm run lint`, `npm run test *`, reading `~/.zshrc`.
-  - `deny` — `curl`, force pushes (`git push --force` / `-f`), `git reset --hard`, `rm -rf`, reading `.env` / `.env.*` files and anything under `secrets/`.
-  - `ask` — confirm before `git commit` / `git push` / `git merge` / `git rebase` (including the `rtk`-proxied variants).
+  - `deny` — `curl`, `rm -rf`, reading `.env` / `.env.*` files and anything under `secrets/`.
+  - `ask` — confirm before `git commit` / `git push` / `git merge` / `git rebase` / `git reset --hard` (including the `rtk`-proxied variants). Force pushes fall under `git push` and are confirmed, not blocked.
 - **Hooks**: a `PreToolUse` hook on `Bash` runs two commands — `rtk hook claude` (token optimization, see [RTK](#rtk)) and [`branch-guard.sh`](#git-guardrails) (git safety).
 - **Plugins**: five enabled — see [Plugins](#plugins).
 
@@ -56,13 +56,11 @@ It pulls the working directory, model name, and context-window usage from the in
 
 ## Git guardrails
 
-Three layers, weakest to strongest, stop the agent from doing risky git operations on its own:
+Philosophy: **alert, don't block.** Three layers warn about risky git operations and ask for confirmation — the user stays in control and nothing is prevented outright:
 
-1. **`CLAUDE.md`** — natural-language intent. Helpful, not a guarantee.
-2. **`permissions` (deny / ask)** in `settings.json` — a real gate, but Bash string matching can be dodged with odd syntax.
-3. **`branch-guard.sh`** (`PreToolUse` hook) — deterministic code that runs before every Bash command. The only client-side layer that *truly* blocks.
-
-`branch-guard.sh` reads the command from the hook's stdin JSON and blocks (exit `2`) when it sees:
+1. **`CLAUDE.md`** — natural-language intent. Tells the agent to warn first, prefer a feature branch + PR, and show `git status` / `git diff --cached` before committing — without forcing it.
+2. **`permissions` (deny / ask)** in `settings.json` — `ask` confirms git commit/push/merge/rebase/reset --hard. `deny` is reserved for the few non-negotiables (`curl`, `rm -rf`, reading secrets).
+3. **`branch-guard.sh`** (`PreToolUse` hook) — deterministic code that runs before every Bash command and **asks for confirmation** (it returns `permissionDecision: "ask"`, exit `0`) when it sees:
 
 - a force push (`--force` / `-f` / `--force-with-lease`) on any branch;
 - a direct push to a protected branch (`git push origin main`, `HEAD:main`, …);
@@ -70,9 +68,9 @@ Three layers, weakest to strongest, stop the agent from doing risky git operatio
 
 Its substring regexes also match `rtk`-proxied commands, so it composes with the RTK hook. Protected branches come from `.protected-branches` (falling back to `main master production release`).
 
-> The strongest layer lives **outside** the agent: server-side branch protection (GitHub/GitLab) requiring a PR + human review to merge. The agent can't bypass that — and what reaches `main` is what actually matters.
+> If you want a hard, undodgeable boundary, put it **outside** the agent: an OS-level sandbox (e.g. [`ai-jail`](https://github.com/akitaonrails/ai-jail)) and/or server-side branch protection. These client-side layers are tripwires that alert you — they are not a cage.
 
-Test the hook directly (expect a block message and `exit: 2`):
+Test the hook directly (expect a JSON `permissionDecision: "ask"` and `exit: 0`):
 
 ```bash
 echo '{"tool_input":{"command":"git push origin main"}}' | bash hooks/branch-guard.sh; echo "exit: $?"
