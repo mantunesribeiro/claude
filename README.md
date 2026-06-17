@@ -68,8 +68,6 @@ Philosophy: **alert, don't block.** Three layers warn about risky git operations
 
 Its substring regexes also match `rtk`-proxied commands, so it composes with the RTK hook. Protected branches come from `.protected-branches` (falling back to `main master production release`).
 
-> If you want a hard, undodgeable boundary, put it **outside** the agent: an OS-level sandbox (e.g. [`ai-jail`](https://github.com/akitaonrails/ai-jail)) and/or server-side branch protection. These client-side layers are tripwires that alert you — they are not a cage.
-
 Test the hook directly (expect a JSON `permissionDecision: "ask"` and `exit: 0`):
 
 ```bash
