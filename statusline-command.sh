@@ -10,6 +10,13 @@ ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // empty')
 user=$(whoami)
 dir="${raw_dir/#$HOME/\~}"
 
+# cage sets the jail's hostname to "cage" (--hostname cage). Flag it so the bar
+# makes the OS-level sandbox visible at a glance.
+cage_marker=""
+if [ "$(hostname 2>/dev/null)" = "cage" ] || [ -n "$CAGE" ]; then
+  cage_marker=$(printf "\033[1;33m🔒 cage\033[0m \033[35m|\033[0m ")
+fi
+
 git_branch=""
 if git -C "$raw_dir" --no-optional-locks rev-parse --is-inside-work-tree 2>/dev/null | grep -q true; then
   branch=$(git -C "$raw_dir" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null \
@@ -28,5 +35,5 @@ if [ -n "$used_pct" ]; then
   fi
 fi
 
-printf "\033[32m%s\033[0m \033[35m|\033[0m \033[34m%s\033[0m%s \033[35m|\033[0m \033[36m%s\033[0m%s" \
-  "$user" "$dir" "$git_branch" "$model" "$ctx_info"
+printf "\033[32m%s\033[0m \033[35m|\033[0m \033[34m%s\033[0m%s \033[35m|\033[0m %s\033[36m%s\033[0m%s" \
+  "$user" "$dir" "$git_branch" "$cage_marker" "$model" "$ctx_info"
