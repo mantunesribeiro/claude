@@ -4,11 +4,17 @@
 #
 # WARNS (asks for confirmation) on dangerous git operations — it does NOT block.
 # The user is alerted and decides; nothing is prevented outright. Covers:
-#   - git merge        while on a protected branch (main/master/...)
+#   - git commit       while on a protected branch (main/master/...)
+#   - git merge        while on a protected branch
 #   - git rebase       while on a protected branch
 #   - git push         directly to a protected branch
 #   - git push --force / -f / --force-with-lease (force push on any branch)
 #   - git reset --hard while on a protected branch
+#
+# NOTE: this lives in a PreToolUse hook on purpose. A hook's "ask" decision
+# overrides any "allow" permission rule (incl. a local settings.local.json
+# entry written by "don't ask again"), so this guard cannot be silently
+# shadowed the way the settings.json `ask` rules can.
 #
 # The substring-based regexes also match rtk-proxied commands
 # (e.g. "rtk git push origin main"), so this works alongside the rtk hook.
@@ -108,8 +114,13 @@ for p in "${PROTECTED_BRANCHES[@]}"; do
   fi
 done
 
-# 3) merge / rebase / reset --hard while ON the protected branch
+# 3) commit / merge / rebase / reset --hard while ON the protected branch
 if [[ -n "$CURRENT_BRANCH" ]] && is_protected "$CURRENT_BRANCH"; then
+
+  if echo "$CMD" | grep -Eq 'git[[:space:]]+commit([[:space:]]|$)'; then
+    warn "commit while on protected branch '${CURRENT_BRANCH}'." \
+         "prefer a feature branch; confirm only if you mean to commit straight to '${CURRENT_BRANCH}', and only the files you intend."
+  fi
 
   if echo "$CMD" | grep -Eq 'git[[:space:]]+merge([[:space:]]|$)'; then
     warn "merge while on protected branch '${CURRENT_BRANCH}'." \
