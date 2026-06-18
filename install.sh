@@ -32,9 +32,12 @@ echo "Checking RTK (used by the Bash PreToolUse hook):"
 check_rtk
 
 echo ""
-echo "Quick test of branch-guard (expect a block + exit: 2):"
-echo '{"tool_input":{"command":"git push origin main"}}' \
-  | bash "$CLAUDE_DIR/hooks/branch-guard.sh" || echo "exit: $?"
+echo "Running the branch-guard test suite:"
+if bash "$REPO_DIR/tests/branch-guard.test.sh"; then
+  echo "  branch-guard tests passed."
+else
+  echo "  WARNING: branch-guard tests failed — review hooks/branch-guard.sh." >&2
+fi
 
 echo ""
 echo "Done. Restart Claude Code, then verify with /status (look for User settings)."

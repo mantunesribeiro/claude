@@ -2,31 +2,48 @@
 
 These rules apply to ALL of my projects. They complement the `branch-guard`
 hook and the permissions in `settings.json`.
-Philosophy: **alert, don't block.** The `branch-guard` hook and the `ask`
-permissions *warn me and ask for confirmation* on risky git operations — they
-do not prevent them. I stay in control and decide. These instructions exist so
-you understand the intent and default to the safer choice without being forced.
+
+Philosophy: **safe by default, with an escape hatch.** The `branch-guard` hook
+has three modes, set via the `BRANCH_GUARD_MODE` env var when Claude Code is
+launched:
+
+- `alert` — never blocks; only warns and asks for confirmation, even on a
+  protected branch (for committing straight to it without a pull request each
+  time).
+- `default` (when the var is unset) — **blocks** ops that touch a protected
+  branch (commit/merge/rebase/push/reset/force push); only **alerts** on other
+  branches.
+- `strict` — blocks destructive ops (force push, `reset --hard`) on *any*
+  branch, and blocks any write to a protected branch.
+
+So in the usual `default` mode the hook *prevents* writes to a protected branch
+rather than just warning. Still follow the intent below: prefer a feature
+branch, and when something is blocked, explain it and suggest the feature-branch
+path rather than reaching for `BRANCH_GUARD_MODE=alert` unless I ask.
 
 ## Protected branches
 The following branches are **protected** and must be treated the same way
-throughout these rules: `main`, `master`, `production`, `release`.
+throughout these rules: `develop`, `release`, `main`, `master`, `production`.
 Whenever a rule below says "a protected branch", it means any of these.
 (This list must stay in sync with `.protected-branches`, which `branch-guard.sh` reads.)
 
-## Working on protected branches (warn, don't block)
-- Committing, merging, or pushing directly to a protected branch is **allowed**,
-  but it is risky — **warn me first**, then proceed once I confirm.
-- **Default to the safer path** without forcing it: prefer a feature branch
+## Working on protected branches (blocked by default)
+- In `default`/`strict` mode the hook **blocks** committing, merging, or pushing
+  directly to a protected branch. Don't try to route around it — instead:
+- **Default to the safer path**: open a feature branch
   `git checkout -b <prefix>/<short-description>`
   (prefixes: `feature/`, `fix/`, `docs/`, `chore/`, `refactor/`) and a PR.
-  Suggest it, but if I say work directly on the protected branch, do so.
+- If I genuinely want to work straight on a protected branch, the way through is
+  to relaunch with `BRANCH_GUARD_MODE=alert` — only suggest that when I ask;
+  don't reach for it on my behalf.
 - Before any commit/push, **show me `git status` and `git diff --cached`** so I
-  can see exactly what's going out (this is the discipline that replaces hard
-  blocking).
+  can see exactly what's going out.
 
 ## Integrating changes
-- A Pull Request is the **preferred** way to reach a protected branch — not the
-  only one. If I ask to merge/push directly, alert me to the risk and do it.
+- A Pull Request is the **preferred** way to reach a protected branch. In
+  `default`/`strict` mode a direct merge/push to it is blocked; if I ask to go
+  direct, point me at `BRANCH_GUARD_MODE=alert` rather than working around the
+  hook.
 - To update a branch with its base, **prefer `git merge`** over `git rebase`.
   `rebase` rewrites history — warn me before running it.
 
@@ -52,7 +69,7 @@ confirm. Never run one of these as a silent side effect of another task.
    feature branch — but don't force it; follow my call.
 2. Show `git status` + `git diff --cached` for the files you changed.
 3. Commit the changes (no co-author; attribution is disabled).
-4. `git push`. If the target is a protected branch, the warn+confirm fires —
-   that's expected; proceed once I confirm.
-5. Prefer opening/updating a PR. If I asked to go straight to the protected
-   branch, that's fine — you already warned me.
+4. `git push`. If the target is a protected branch, in `default`/`strict` mode
+   the hook **blocks** it — push the feature branch instead and open a PR. Only
+   if I explicitly want a direct push do I relaunch with `BRANCH_GUARD_MODE=alert`.
+5. Prefer opening/updating a PR.

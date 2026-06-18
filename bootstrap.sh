@@ -8,8 +8,8 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/mantunesribeiro/claude/main/bootstrap.sh | bash
 #
-# Pin to a tag/commit instead of 'main' by setting REF, e.g.:
-#   curl -fsSL .../bootstrap.sh | REF=v1.0.0 bash
+# Defaults to 'main'. Pin to another branch/tag/commit by setting REF, e.g.:
+#   curl -fsSL .../bootstrap.sh | REF=<branch-tag-or-commit> bash
 
 set -euo pipefail
 
