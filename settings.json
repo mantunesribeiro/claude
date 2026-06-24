@@ -1,11 +1,11 @@
 {
-  "attribution": {
-    "commit": "",
-    "pr": ""
-  },
   "env": {
     "DISABLE_TELEMETRY": "1",
     "DISABLE_ERROR_REPORTING": "1"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   },
   "permissions": {
     "allow": [
@@ -42,10 +42,6 @@
           {
             "type": "command",
             "command": "rtk hook claude"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/branch-guard.sh\""
           }
         ]
       }
@@ -77,5 +73,6 @@
     }
   },
   "effortLevel": "xhigh",
+  "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi"
 }

@@ -28,8 +28,6 @@ MANAGED_MARKER="$CLAUDE_DIR/.claude-config-managed"
 LINKS=(
   "settings.json|settings.json"
   "statusline-command.sh|statusline-command.sh"
-  "hooks/branch-guard.sh|hooks/branch-guard.sh"
-  ".protected-branches|.protected-branches"
   "CLAUDE.md|git-rules.md"
 )
 
@@ -54,13 +52,12 @@ place() {
 
 # place_all — (re)place every file. Idempotent.
 place_all() {
-  mkdir -p "$CLAUDE_DIR/hooks"
   local pair src dst
   for pair in "${LINKS[@]}"; do
     src="${pair%%|*}"; dst="${pair##*|}"
     place "$src" "$dst"
   done
-  chmod +x "$CLAUDE_DIR/hooks/branch-guard.sh" "$CLAUDE_DIR/statusline-command.sh"
+  chmod +x "$CLAUDE_DIR/statusline-command.sh"
   touch "$MANAGED_MARKER"
 }
 
