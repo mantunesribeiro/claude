@@ -8,7 +8,7 @@ Personal [Claude Code](https://docs.claude.com/en/docs/claude-code) configuratio
 | --- | --- |
 | `settings.json` | Claude Code settings — model, permissions, hooks, plugins, theme. |
 | `statusline-command.sh` | Custom statusline renderer (user, directory, git branch, model, context usage). |
-| `CLAUDE.md` | Natural-language git workflow rules (the *intent* behind the permissions). |
+| `CLAUDE.md` | Natural-language git commit rules: stage and commit only the session's files, never a blanket `git add`. Linked into `~/.claude` as `git-rules.md`. |
 | `install.sh` | First-time setup: symlinks everything into `~/.claude` (with backups), wires the git rules, registers plugin marketplaces, sanity-checks. |
 | `update.sh` | Re-syncs `~/.claude` with the repository after you edit it (new files, plugin marketplaces). |
 | `bootstrap.sh` | One-liner remote installer for machines that don't keep the repository: downloads the tarball and **copies** the configuration into `~/.claude`. Re-run to update. |
@@ -56,8 +56,8 @@ Two layers shape risky git operations:
 
 | Layer | Role |
 | --- | --- |
-| `CLAUDE.md` | Natural-language intent: prefer a feature branch + pull request, treat `develop` / `release` / `main` / `master` / `production` as protected, warn before destructive or history-rewriting commands, show `git status` / `git diff --cached` before committing, and stage only the files changed this session. |
-| `settings.json` permissions | `ask` confirms git commit/push/merge/rebase/reset --hard (including the `rtk`-proxied variants); `deny` covers the non-negotiables (`curl`, `rm -rf`, reading secrets). |
+| `CLAUDE.md` | Natural-language commit discipline: stage and commit only the files changed this session, passing them explicitly (`git commit <files> -m "..."`). Never `git add -A`, `git add .`, `git commit -a`, or a bare commit, so pre-existing staged changes stay untouched. When unsure which files are yours, show `git status` and ask before committing. |
+| `settings.json` permissions | `ask` confirms the history-rewriting and merge operations: git merge/rebase/reset --hard (including the `rtk`-proxied variants). Commit and push run without a prompt under `auto` mode. `deny` covers the non-negotiables (`curl`, `rm -rf`, reading secrets). |
 
 These are conventions plus confirmation prompts, not a blocking hook. The `ask` rules surface a prompt before each risky command so nothing lands on a protected branch by accident, but the final decision is yours.
 

@@ -21,17 +21,14 @@
       "Read(**/secrets/**)"
     ],
     "ask": [
-      "Bash(git commit *)",
-      "Bash(git push *)",
       "Bash(git merge *)",
       "Bash(git rebase *)",
       "Bash(git reset --hard *)",
-      "Bash(rtk git commit *)",
-      "Bash(rtk git push *)",
       "Bash(rtk git merge *)",
       "Bash(rtk git rebase *)",
       "Bash(rtk git reset --hard *)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "model": "opus",
   "hooks": {
