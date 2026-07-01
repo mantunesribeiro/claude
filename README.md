@@ -21,8 +21,7 @@ Personal [Claude Code](https://docs.claude.com/en/docs/claude-code) configuratio
 - **Model**: `opus`, with `effortLevel` set to `xhigh` and the `dark-ansi` theme.
 - **Privacy**: telemetry and error reporting disabled (`DISABLE_TELEMETRY`, `DISABLE_ERROR_REPORTING`).
 - **Attribution**: empty commit/pull request trailers, so commits and pull requests are not tagged with Claude attribution.
-- **Permissions**:
-  - `allow` — `npm run lint`, `npm run test *`, reading `~/.zshrc`.
+- **Permissions** (`defaultMode: auto`, so safe commands run without an explicit `allow` list):
   - `deny` — `curl`, `rm -rf`, reading `.env` / `.env.*` files and anything under `secrets/`.
   - `ask` — confirm before `git commit` / `git push` / `git merge` / `git rebase` / `git reset --hard` (including the `rtk`-proxied variants). See [Git workflow](#git-workflow) for the conventions these back up.
 - **Hooks**: a `PreToolUse` hook on `Bash` runs `rtk hook claude` (token optimization, see [RTK](#rtk)).

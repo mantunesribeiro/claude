@@ -8,11 +8,6 @@
     "pr": ""
   },
   "permissions": {
-    "allow": [
-      "Bash(npm run lint)",
-      "Bash(npm run test *)",
-      "Read(~/.zshrc)"
-    ],
     "deny": [
       "Bash(curl *)",
       "Bash(rm -rf:*)",
